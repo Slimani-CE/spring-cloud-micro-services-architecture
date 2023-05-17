@@ -258,8 +258,29 @@ spring.datasource.url = jdbc:h2:mem:billing-db
 spring.cloud.discovery.enabled = false
 management.endpoints.web.exposure.include = health,info,help
 ```
-
-
+* Add some data to the database
+```java
+@Override
+public void run(String... args) throws Exception {
+    repositoryRestConfiguration.exposeIdsFor(Bill.class);
+    repositoryRestConfiguration.exposeIdsFor(ProductItem.class);
+    Customer customer = customerRestclient.getCustomerById(1L);
+    Bill bill = billRepository.save(new Bill(null, new Date(), null, customer.getId(), customer));
+    PagedModel<Product> productPagedModel = inventoryRestClient.pageProducts();
+    productPagedModel.forEach(p -> {
+        ProductItem productItem = ProductItem.builder()
+                .price(p.getPrice())
+                .quantity(1 + new Random().nextInt(100))
+                .bill(bill)
+                .productID(p.getId())
+                .build();
+        productItemRepository.save(productItem);
+        System.out.println(p);
+    });
+}
+```
+* REST API test: Navigate to http://localhost:8083/web/fullBill/1 (Explore bill with id 1)
+![REST API test](assets/billing%20rest%20test.png)
 ## Gateway service
 * definition locator: this is where we define the routes dynamically
 ```java
@@ -305,5 +326,7 @@ eureka.client.register-with-eureka = false
 # To expose all endpoints
 management.endpoints.web.exposure.include = help
 ```
+* Test Eureka server: Navigate to http://localhost:8761/
+![Eureka server](assets/eureka%20test.png)
 
 ## Angular client
