@@ -8,9 +8,15 @@
 - [Eureka discovery](https://github.com/Slimani-CE/eureka-discovery)
 
 # Table of Contents
-- [📖 Overview](#-overview)
-- [📖 Architecture](#-architecture)
-# 📖 Overview
+- [Overview](#overview)
+- [Architecture](#architecture)
+    - [Customer service](#Customer-service)
+    - [Inventory service](#Inventory-service)
+    - [Billing service](#Billing-service)
+    - [Gateway service](#Gateway-service)
+    - [Eureka discovery](#Eureka-discovery)
+    - [Angular client](#Angular-client)
+# Overview
 This project is a microservices-based architecture designed to handle various functionalities related to customer management, inventory management, and billing. It involves the development and deployment of multiple microservices using Java frameworks and libraries.
 
 1. Customer-service:
@@ -48,4 +54,16 @@ This project is a microservices-based architecture designed to handle various fu
     
 This project demonstrates the implementation of microservices architecture using various technologies and frameworks such as Spring Data, Spring Cloud Gateway, Netflix Eureka Server, and Open Feign. It showcases the development of individual microservices with their respective functionalities and communication between them. Additionally, it includes the creation of a client application using Angular to provide a user interface for viewing invoices.
 
-# 📖 Architecture
+# Architecture
+
+## Customer service
+
+## Inventory service
+
+## Billing service
+
+## Gateway service
+
+## Eureka discovery
+
+## Angular client
