@@ -275,11 +275,19 @@ pre[data-line] .line-highlight[data-end]:after {
 <h1 class="mume-header" id="table-of-contents">Table of Contents</h1>
 
 <ul>
-<li><a href="#-overview">Overview</a></li>
-<li><a href="#-architecture">Architecture</a></li>
-<li><a href="#-Customer-service">Customer service</a></li>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#architecture">Architecture</a>
+<ul>
+<li><a href="#Customer-service">Customer service</a></li>
+<li><a href="#Inventory-service">Inventory service</a></li>
+<li><a href="#Billing-service">Billing service</a></li>
+<li><a href="#Gateway-service">Gateway service</a></li>
+<li><a href="#Eureka-discovery">Eureka discovery</a></li>
+<li><a href="#Angular-client">Angular client</a></li>
 </ul>
-<h1 class="mume-header" id="-overview">&#x1F4D6; Overview</h1>
+</li>
+</ul>
+<h1 class="mume-header" id="overview">Overview</h1>
 
 <p>This project is a microservices-based architecture designed to handle various functionalities related to customer management, inventory management, and billing. It involves the development and deployment of multiple microservices using Java frameworks and libraries.</p>
 <ol>
@@ -337,9 +345,266 @@ pre[data-line] .line-highlight[data-end]:after {
 </li>
 </ol>
 <p>This project demonstrates the implementation of microservices architecture using various technologies and frameworks such as Spring Data, Spring Cloud Gateway, Netflix Eureka Server, and Open Feign. It showcases the development of individual microservices with their respective functionalities and communication between them. Additionally, it includes the creation of a client application using Angular to provide a user interface for viewing invoices.</p>
-<h1 class="mume-header" id="-architecture">&#x1F4D6; Architecture</h1>
+<h1 class="mume-header" id="architecture">Architecture</h1>
 
-<h1 class="mume-header" id="-customer-service">&#x1F4D6; Customer service</h1>
+<p><img src="assets/Architecture.png" alt="Architecture"></p>
+<h2 class="mume-header" id="customer-service">Customer service</h2>
+
+<ul>
+<li>Customer entity</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Entity</span>
+<span class="token annotation punctuation">@Data</span> <span class="token annotation punctuation">@AllArgsConstructor</span> <span class="token annotation punctuation">@NoArgsConstructor</span> <span class="token annotation punctuation">@Builder</span> <span class="token annotation punctuation">@ToString</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">Customer</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@Id</span> <span class="token annotation punctuation">@GeneratedValue</span><span class="token punctuation">(</span>strategy <span class="token operator">=</span> <span class="token class-name">GenerationType</span><span class="token punctuation">.</span>IDENTITY<span class="token punctuation">)</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> id<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">String</span> email<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>Application.properties</li>
+</ul>
+<pre data-role="codeBlock" data-info="properties" class="language-properties"><span class="token attr-name">server.port</span> <span class="token punctuation">=</span> <span class="token attr-value">8081</span>
+<span class="token attr-name">spring.application.name</span> <span class="token punctuation">=</span> <span class="token attr-value">customer-service</span>
+<span class="token attr-name">spring.datasource.url</span> <span class="token punctuation">=</span> <span class="token attr-value">jdbc:h2:mem:customer-db</span>
+<span class="token comment"># Prevent the service to register itself. While our eureka discovery</span>
+<span class="token comment"># is not set up yet. This will prevent the service to register itself.</span>
+<span class="token attr-name">spring.cloud.discovery.enabled</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
+<span class="token comment"># To expose all endpoints</span>
+<span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">health,info,help</span>
+</pre><ul>
+<li>Add some data to the database</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Bean</span>
+<span class="token class-name">CommandLineRunner</span> <span class="token function">start</span><span class="token punctuation">(</span><span class="token class-name">CustomerRepository</span> customerRepository<span class="token punctuation">,</span> <span class="token class-name">RepositoryRestConfiguration</span> repositoryRestConfiguration<span class="token punctuation">)</span><span class="token punctuation">{</span>
+    repositoryRestConfiguration<span class="token punctuation">.</span><span class="token function">exposeIdsFor</span><span class="token punctuation">(</span><span class="token class-name">Customer</span><span class="token punctuation">.</span><span class="token keyword keyword-class">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword keyword-return">return</span> args <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Stream</span><span class="token punctuation">.</span><span class="token function">of</span><span class="token punctuation">(</span><span class="token string">&quot;Ahmed&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;Salma&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;Mustapha&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;Othman&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;Sanae&quot;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>name <span class="token operator">-&gt;</span><span class="token punctuation">{</span>
+            <span class="token class-name">Customer</span> customer <span class="token operator">=</span> <span class="token class-name">Customer</span><span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">.</span><span class="token function">id</span><span class="token punctuation">(</span><span class="token keyword keyword-null">null</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">.</span><span class="token function">name</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+                    <span class="token punctuation">.</span><span class="token function">email</span><span class="token punctuation">(</span>name <span class="token operator">+</span> <span class="token string">&quot;@gmail.com&quot;</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            customerRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span>customer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>REST API test: Navigate to <a href="http://localhost:8081/customers">http://localhost:8081/customers</a><br>
+<img src="assets/customer%20rest%20test.png" alt="REST API test"></li>
+</ul>
+<h2 class="mume-header" id="inventory-service">Inventory service</h2>
+
+<ul>
+<li>Product entity</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Entity</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span> <span class="token annotation punctuation">@Builder</span>
+<span class="token annotation punctuation">@Data</span> <span class="token annotation punctuation">@ToString</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">Product</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@Id</span> <span class="token annotation punctuation">@GeneratedValue</span><span class="token punctuation">(</span>strategy <span class="token operator">=</span> <span class="token class-name">GenerationType</span><span class="token punctuation">.</span>IDENTITY<span class="token punctuation">)</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> id<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Double</span> price<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Double</span> quantity<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>Application.properties</li>
+</ul>
+<pre data-role="codeBlock" data-info="properties" class="language-properties"><span class="token attr-name">server.port</span> <span class="token punctuation">=</span> <span class="token attr-value">8082</span>
+<span class="token attr-name">spring.application.name</span> <span class="token punctuation">=</span> <span class="token attr-value">inventory-service</span>
+<span class="token attr-name">spring.datasource.url</span> <span class="token punctuation">=</span> <span class="token attr-value">jdbc:h2:mem:inventory-db</span>
+<span class="token attr-name">spring.cloud.discovery.enabled</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
+<span class="token comment"># To expose endpoints</span>
+<span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">health,info,help</span>
+</pre><ul>
+<li>Add some data to the database</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Override</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-void">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> args<span class="token punctuation">)</span> <span class="token keyword keyword-throws">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Expose Products Id</span>
+    repositoryRestConfiguration<span class="token punctuation">.</span><span class="token function">exposeIdsFor</span><span class="token punctuation">(</span><span class="token class-name">Product</span><span class="token punctuation">.</span><span class="token keyword keyword-class">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    productRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span><span class="token keyword keyword-new">new</span> <span class="token class-name">Product</span><span class="token punctuation">(</span><span class="token keyword keyword-null">null</span><span class="token punctuation">,</span> <span class="token string">&quot;LAPTOP HP&quot;</span><span class="token punctuation">,</span> <span class="token number">3500.</span><span class="token punctuation">,</span> <span class="token number">5.</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    productRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span><span class="token keyword keyword-new">new</span> <span class="token class-name">Product</span><span class="token punctuation">(</span><span class="token keyword keyword-null">null</span><span class="token punctuation">,</span> <span class="token string">&quot;HyperX Headphones&quot;</span><span class="token punctuation">,</span> <span class="token number">1500.</span><span class="token punctuation">,</span> <span class="token number">10.</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    productRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span><span class="token keyword keyword-new">new</span> <span class="token class-name">Product</span><span class="token punctuation">(</span><span class="token keyword keyword-null">null</span><span class="token punctuation">,</span> <span class="token string">&quot;MACBOOK PRO&quot;</span><span class="token punctuation">,</span> <span class="token number">9000.</span><span class="token punctuation">,</span> <span class="token number">5.</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    productRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span><span class="token keyword keyword-new">new</span> <span class="token class-name">Product</span><span class="token punctuation">(</span><span class="token keyword keyword-null">null</span><span class="token punctuation">,</span> <span class="token string">&quot;DELL DESKTOP&quot;</span><span class="token punctuation">,</span> <span class="token number">5000.</span><span class="token punctuation">,</span> <span class="token number">5.</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    productRepository<span class="token punctuation">.</span><span class="token function">findAll</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>product <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">&quot;Product name: &quot;</span> <span class="token operator">+</span> product<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>REST API test: Navigate to <a href="http://localhost:8082/products">http://localhost:8082/products</a><br>
+<img src="assets/product%20rest%20test.png" alt="REST API test"></li>
+</ul>
+<h2 class="mume-header" id="billing-service">Billing service</h2>
+
+<ul>
+<li>Bill entity</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Entity</span>
+<span class="token annotation punctuation">@Data</span> <span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span> <span class="token annotation punctuation">@Builder</span> <span class="token annotation punctuation">@ToString</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">Bill</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@Id</span> <span class="token annotation punctuation">@GeneratedValue</span><span class="token punctuation">(</span>strategy <span class="token operator">=</span> <span class="token class-name">GenerationType</span><span class="token punctuation">.</span>IDENTITY<span class="token punctuation">)</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> id<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Date</span> billingDate<span class="token punctuation">;</span>
+    <span class="token annotation punctuation">@OneToMany</span><span class="token punctuation">(</span>mappedBy <span class="token operator">=</span> <span class="token string">&quot;bill&quot;</span><span class="token punctuation">)</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">ProductItem</span><span class="token punctuation">&gt;</span></span> productItems<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> customerId<span class="token punctuation">;</span>
+    <span class="token annotation punctuation">@Transient</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Customer</span> customer<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>ProductItem entity</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Entity</span>
+<span class="token annotation punctuation">@Data</span> <span class="token annotation punctuation">@AllArgsConstructor</span> <span class="token annotation punctuation">@NoArgsConstructor</span> <span class="token annotation punctuation">@ToString</span> <span class="token annotation punctuation">@Builder</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">ProductItem</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@Id</span> <span class="token annotation punctuation">@GeneratedValue</span><span class="token punctuation">(</span>strategy <span class="token operator">=</span> <span class="token class-name">GenerationType</span><span class="token punctuation">.</span>IDENTITY<span class="token punctuation">)</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> id<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> productID<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Double</span> price<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Integer</span> quantity<span class="token punctuation">;</span>
+    <span class="token annotation punctuation">@Transient</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Product</span> product<span class="token punctuation">;</span>
+    <span class="token annotation punctuation">@ManyToOne</span>
+    <span class="token annotation punctuation">@JsonProperty</span><span class="token punctuation">(</span>access <span class="token operator">=</span> <span class="token class-name">JsonProperty<span class="token punctuation">.</span>Access</span><span class="token punctuation">.</span>WRITE_ONLY<span class="token punctuation">)</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Bill</span> bill<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>Model package
+<ul>
+<li>Product class</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@ToString</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">Product</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> id<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Double</span> price<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Double</span> quantity<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>Customer class</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@ToString</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">Customer</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">Long</span> id<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token class-name">String</span> email<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre></li>
+<li>feign package
+<ul>
+<li>CustomerRestClient interface</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@FeignClient</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">&quot;CUSTOMER-SERVICE&quot;</span><span class="token punctuation">)</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-interface">interface</span> <span class="token class-name">CustomerRestclient</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span>path <span class="token operator">=</span> <span class="token string">&quot;/customers/{id}&quot;</span><span class="token punctuation">)</span>
+    <span class="token class-name">Customer</span> <span class="token function">getCustomerById</span><span class="token punctuation">(</span><span class="token annotation punctuation">@PathVariable</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">&quot;id&quot;</span><span class="token punctuation">)</span> <span class="token class-name">Long</span> id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>InventoryRestClient interface</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@FeignClient</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">&quot;INVENTORY-SERVICE&quot;</span><span class="token punctuation">)</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-interface">interface</span> <span class="token class-name">InventoryRestClient</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span>path <span class="token operator">=</span> <span class="token string">&quot;/products&quot;</span><span class="token punctuation">)</span>
+    <span class="token class-name">PagedModel</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Product</span><span class="token punctuation">&gt;</span></span> <span class="token function">pageProducts</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span>path <span class="token operator">=</span> <span class="token string">&quot;/products/{id}&quot;</span><span class="token punctuation">)</span>
+    <span class="token class-name">Product</span> <span class="token function">getProductById</span><span class="token punctuation">(</span><span class="token annotation punctuation">@PathVariable</span> <span class="token class-name">Long</span> id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>BillRestController: Web layer</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">&quot;/web&quot;</span><span class="token punctuation">)</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">BillingRestController</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword keyword-private">private</span> <span class="token keyword keyword-final">final</span> <span class="token class-name">BillRepository</span> billRepository<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token keyword keyword-final">final</span> <span class="token class-name">CustomerRestclient</span> customerRestclient<span class="token punctuation">;</span>
+    <span class="token keyword keyword-private">private</span> <span class="token keyword keyword-final">final</span> <span class="token class-name">InventoryRestClient</span> inventoryRestClient<span class="token punctuation">;</span>
+
+    <span class="token keyword keyword-public">public</span> <span class="token class-name">BillingRestController</span><span class="token punctuation">(</span><span class="token class-name">BillRepository</span> billRepository<span class="token punctuation">,</span> <span class="token class-name">CustomerRestclient</span> customerRestclient<span class="token punctuation">,</span> <span class="token class-name">InventoryRestClient</span> inventoryRestClient<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword keyword-this">this</span><span class="token punctuation">.</span>billRepository <span class="token operator">=</span> billRepository<span class="token punctuation">;</span>
+        <span class="token keyword keyword-this">this</span><span class="token punctuation">.</span>customerRestclient <span class="token operator">=</span> customerRestclient<span class="token punctuation">;</span>
+        <span class="token keyword keyword-this">this</span><span class="token punctuation">.</span>inventoryRestClient <span class="token operator">=</span> inventoryRestClient<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span>path <span class="token operator">=</span> <span class="token string">&quot;/fullBill/{id}&quot;</span><span class="token punctuation">)</span>
+    <span class="token keyword keyword-public">public</span> <span class="token class-name">Bill</span> <span class="token function">getBill</span><span class="token punctuation">(</span><span class="token annotation punctuation">@PathVariable</span><span class="token punctuation">(</span><span class="token string">&quot;id&quot;</span><span class="token punctuation">)</span> <span class="token class-name">Long</span> id<span class="token punctuation">)</span><span class="token punctuation">{</span>
+        <span class="token class-name">Bill</span> bill <span class="token operator">=</span> billRepository<span class="token punctuation">.</span><span class="token function">findById</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        bill<span class="token punctuation">.</span><span class="token function">setCustomer</span><span class="token punctuation">(</span>customerRestclient<span class="token punctuation">.</span><span class="token function">getCustomerById</span><span class="token punctuation">(</span>bill<span class="token punctuation">.</span><span class="token function">getCustomerId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        bill<span class="token punctuation">.</span><span class="token function">getProductItems</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>productItem <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+            <span class="token class-name">Product</span> product <span class="token operator">=</span> inventoryRestClient<span class="token punctuation">.</span><span class="token function">getProductById</span><span class="token punctuation">(</span>productItem<span class="token punctuation">.</span><span class="token function">getProductID</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            productItem<span class="token punctuation">.</span><span class="token function">setProduct</span><span class="token punctuation">(</span>product<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword keyword-return">return</span> bill<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</pre></li>
+<li>Application.properties</li>
+</ul>
+<pre data-role="codeBlock" data-info="properties" class="language-properties"><span class="token attr-name">server.port</span> <span class="token punctuation">=</span> <span class="token attr-value">8083</span>
+<span class="token attr-name">spring.application.name</span> <span class="token punctuation">=</span> <span class="token attr-value">billing-service</span>
+<span class="token attr-name">spring.datasource.url</span> <span class="token punctuation">=</span> <span class="token attr-value">jdbc:h2:mem:billing-db</span>
+<span class="token attr-name">spring.cloud.discovery.enabled</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
+<span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">health,info,help</span>
+</pre><h2 class="mume-header" id="gateway-service">Gateway service</h2>
+
+<ul>
+<li>definition locator: this is where we define the routes dynamically</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@SpringBootApplication</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">GatewayServiceApplication</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword keyword-public">public</span> <span class="token keyword keyword-static">static</span> <span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">SpringApplication</span><span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token class-name">GatewayServiceApplication</span><span class="token punctuation">.</span><span class="token keyword keyword-class">class</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">DiscoveryClientRouteDefinitionLocator</span> <span class="token function">definitionLocator</span><span class="token punctuation">(</span><span class="token class-name">ReactiveDiscoveryClient</span> rdc<span class="token punctuation">,</span> <span class="token class-name">DiscoveryLocatorProperties</span> properties<span class="token punctuation">)</span><span class="token punctuation">{</span>
+        <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">DiscoveryClientRouteDefinitionLocator</span><span class="token punctuation">(</span>rdc<span class="token punctuation">,</span> properties<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>Application.properties</li>
+</ul>
+<pre data-role="codeBlock" data-info="properties" class="language-properties"><span class="token attr-name">server.port</span> <span class="token punctuation">=</span> <span class="token attr-value">8888</span>
+<span class="token attr-name">spring.application.name</span> <span class="token punctuation">=</span> <span class="token attr-value">gateway-service</span>
+<span class="token attr-name">spring.cloud.discovery.enabled</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
+<span class="token comment"># To expose all endpoints</span>
+<span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">health,info,help</span>
+</pre><h2 class="mume-header" id="eureka-discovery">Eureka discovery</h2>
+
+<ul>
+<li>Main application class</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@SpringBootApplication</span>
+<span class="token annotation punctuation">@EnableEurekaServer</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-class">class</span> <span class="token class-name">EurekaDiscoveryApplication</span> <span class="token punctuation">{</span>
+
+	<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-static">static</span> <span class="token keyword keyword-void">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token class-name">SpringApplication</span><span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token class-name">EurekaDiscoveryApplication</span><span class="token punctuation">.</span><span class="token keyword keyword-class">class</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>Application.properties</li>
+</ul>
+<pre data-role="codeBlock" data-info="properties" class="language-properties"><span class="token attr-name">server.port</span> <span class="token punctuation">=</span> <span class="token attr-value">8761</span>
+<span class="token attr-name">eureka.client.fetch-registry</span> <span class="token punctuation">=</span>  <span class="token attr-value">false</span>
+<span class="token comment"># configures the Eureka client to not register itself with the Eureka server.</span>
+<span class="token attr-name">eureka.client.register-with-eureka</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
+<span class="token comment"># To expose all endpoints</span>
+<span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">help</span>
+</pre><h2 class="mume-header" id="angular-client">Angular client</h2>
 
 
       </div>
