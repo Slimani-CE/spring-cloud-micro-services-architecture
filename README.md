@@ -6,6 +6,7 @@
 - [Billing micro-service](https://github.com/Slimani-CE/billing-service)
 - [Gateway micro-service](https://github.com/Slimani-CE/gateway-service)
 - [Eureka discovery](https://github.com/Slimani-CE/eureka-discovery)
+- [Angular client](https://github.com/Slimani-CE?tab=repositories)
 
 # Table of Contents
 - [Overview](#overview)
