@@ -330,3 +330,8 @@ management.endpoints.web.exposure.include = help
 ![Eureka server](assets/eureka%20test.png)
 
 ## Angular client
+* Products component
+![Angular products](assets/Angular%20products%20rest%20test.png)
+
+* Customers component
+![Angular customers](assets/Angular%20customers%20rest%20test.png)

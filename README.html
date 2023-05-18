@@ -557,7 +557,32 @@ pre[data-line] .line-highlight[data-end]:after {
 <span class="token attr-name">spring.datasource.url</span> <span class="token punctuation">=</span> <span class="token attr-value">jdbc:h2:mem:billing-db</span>
 <span class="token attr-name">spring.cloud.discovery.enabled</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
 <span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">health,info,help</span>
-</pre><h2 class="mume-header" id="gateway-service">Gateway service</h2>
+</pre><ul>
+<li>Add some data to the database</li>
+</ul>
+<pre data-role="codeBlock" data-info="java" class="language-java"><span class="token annotation punctuation">@Override</span>
+<span class="token keyword keyword-public">public</span> <span class="token keyword keyword-void">void</span> <span class="token function">run</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> args<span class="token punctuation">)</span> <span class="token keyword keyword-throws">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+    repositoryRestConfiguration<span class="token punctuation">.</span><span class="token function">exposeIdsFor</span><span class="token punctuation">(</span><span class="token class-name">Bill</span><span class="token punctuation">.</span><span class="token keyword keyword-class">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    repositoryRestConfiguration<span class="token punctuation">.</span><span class="token function">exposeIdsFor</span><span class="token punctuation">(</span><span class="token class-name">ProductItem</span><span class="token punctuation">.</span><span class="token keyword keyword-class">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Customer</span> customer <span class="token operator">=</span> customerRestclient<span class="token punctuation">.</span><span class="token function">getCustomerById</span><span class="token punctuation">(</span><span class="token number">1L</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">Bill</span> bill <span class="token operator">=</span> billRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span><span class="token keyword keyword-new">new</span> <span class="token class-name">Bill</span><span class="token punctuation">(</span><span class="token keyword keyword-null">null</span><span class="token punctuation">,</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword keyword-null">null</span><span class="token punctuation">,</span> customer<span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> customer<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token class-name">PagedModel</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Product</span><span class="token punctuation">&gt;</span></span> productPagedModel <span class="token operator">=</span> inventoryRestClient<span class="token punctuation">.</span><span class="token function">pageProducts</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    productPagedModel<span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>p <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+        <span class="token class-name">ProductItem</span> productItem <span class="token operator">=</span> <span class="token class-name">ProductItem</span><span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">price</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getPrice</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">quantity</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">+</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">bill</span><span class="token punctuation">(</span>bill<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">productID</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span><span class="token function">getId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        productItemRepository<span class="token punctuation">.</span><span class="token function">save</span><span class="token punctuation">(</span>productItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</pre><ul>
+<li>REST API test: Navigate to <a href="http://localhost:8083/web/fullBill/1">http://localhost:8083/web/fullBill/1</a> (Explore bill with id 1)<br>
+<img src="assets/billing%20rest%20test.png" alt="REST API test"></li>
+</ul>
+<h2 class="mume-header" id="gateway-service">Gateway service</h2>
 
 <ul>
 <li>definition locator: this is where we define the routes dynamically</li>
@@ -604,8 +629,22 @@ pre[data-line] .line-highlight[data-end]:after {
 <span class="token attr-name">eureka.client.register-with-eureka</span> <span class="token punctuation">=</span> <span class="token attr-value">false</span>
 <span class="token comment"># To expose all endpoints</span>
 <span class="token attr-name">management.endpoints.web.exposure.include</span> <span class="token punctuation">=</span> <span class="token attr-value">help</span>
-</pre><h2 class="mume-header" id="angular-client">Angular client</h2>
+</pre><ul>
+<li>Test Eureka server: Navigate to <a href="http://localhost:8761/">http://localhost:8761/</a><br>
+<img src="assets/eureka%20test.png" alt="Eureka server"></li>
+</ul>
+<h2 class="mume-header" id="angular-client">Angular client</h2>
 
+<ul>
+<li>
+<p>Products component<br>
+<img src="assets/Angular%20products%20rest%20test.png" alt="Angular products"></p>
+</li>
+<li>
+<p>Customers component<br>
+<img src="assets/Angular%20customers%20rest%20test.png" alt="Angular customers"></p>
+</li>
+</ul>
 
       </div>
       
